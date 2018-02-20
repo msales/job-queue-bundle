@@ -1,5 +1,5 @@
 {
-    "name":         "mkocztorz/job-queue-bundle",
+    "name":         "msales/job-queue-bundle",
     "description":  "Allows to schedule Symfony2 console commands as jobs.",
     "keywords":     ["job","queue"],
     "homepage":     "https://github.com/mkocztorz/JMSJobQueueBundle",
@@ -39,14 +39,8 @@
         "sensio/framework-extra-bundle": "Required when using the webinterface.",
         "symfony/twig-bundle": "Required when using the webinterface."
     },
-    "minimum-stability": "dev",
     "autoload": {
         "psr-0": { "JMS\\JobQueueBundle": "" }
     },
-    "target-dir": "JMS/JobQueueBundle",
-    "extra": {
-        "branch-alias": {
-            "dev-master": "0.1.x-dev"
-        }
-    }
+    "target-dir": "JMS/JobQueueBundle"
 }

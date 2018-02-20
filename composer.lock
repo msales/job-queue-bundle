@@ -3220,7 +3220,6 @@
     "aliases": [
 
     ],
-    "minimum-stability": "dev",
     "stability-flags": {
         "pagerfanta/pagerfanta": 20
     },
