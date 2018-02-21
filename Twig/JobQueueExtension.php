@@ -4,33 +4,33 @@ namespace JMS\JobQueueBundle\Twig;
 
 class JobQueueExtension extends \Twig_Extension
 {
-    private $linkGenerators = array();
+    private $linkGenerators = [];
 
-    public function __construct(array $generators = array())
+    public function __construct(array $generators = [])
     {
         $this->linkGenerators = $generators;
     }
 
     public function getTests()
     {
-        return array(
-            'jms_job_queue_linkable' => new \Twig_Test_Method($this, 'isLinkable'),
-        );
+        return [
+            new \Twig_SimpleTest('jms_job_queue_linkable', 'isLinkable'),
+        ];
     }
 
     public function getFunctions()
     {
-        return array(
-            'jms_job_queue_path' => new \Twig_Function_Method($this, 'generatePath', array('is_safe' => array('html' => true))),
-        );
+        return [
+            new \Twig_SimpleFunction('jms_job_queue_path', 'generatePath', ['is_safe' => ['html' => true]]),
+        ];
     }
 
     public function getFilters()
     {
-        return array(
-            'jms_job_queue_linkname' => new \Twig_Filter_Method($this, 'getLinkname'),
-            'jms_job_queue_args' => new \Twig_Filter_Method($this, 'formatArgs'),
-        );
+        return [
+            new \Twig_SimpleFilter('jms_job_queue_linkname', 'getLinkname'),
+            new \Twig_SimpleFilter('jms_job_queue_args', 'formatArgs'),
+        ];
     }
 
     public function formatArgs(array $args, $maxLength = 60)
@@ -40,13 +40,13 @@ class JobQueueExtension extends \Twig_Extension
         foreach ($args as $arg) {
             $argLength = strlen($arg);
 
-            if ( ! $first) {
+            if (!$first) {
                 $str .= ' ';
             }
             $first = false;
 
             if (strlen($str) + $argLength > $maxLength) {
-                $str .= substr($arg, 0, $maxLength - strlen($str) - 4).'...';
+                $str .= substr($arg, 0, $maxLength - strlen($str) - 4) . '...';
                 break;
             }
 
