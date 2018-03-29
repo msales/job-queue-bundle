@@ -28,8 +28,8 @@ class JobQueueExtension extends \Twig_Extension
     public function getFilters()
     {
         return [
-            new \Twig_SimpleFilter('jms_job_queue_linkname', 'getLinkname'),
-            new \Twig_SimpleFilter('jms_job_queue_args', 'formatArgs'),
+            new \Twig_SimpleFilter('jms_job_queue_linkname', [$this, 'getLinkname']),
+            new \Twig_SimpleFilter('jms_job_queue_args', [$this, 'formatArgs']),
         ];
     }
 
