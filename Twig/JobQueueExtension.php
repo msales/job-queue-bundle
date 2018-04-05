@@ -14,7 +14,7 @@ class JobQueueExtension extends \Twig_Extension
     public function getTests()
     {
         return [
-            new \Twig_SimpleTest('jms_job_queue_linkable', 'isLinkable'),
+            new \Twig_SimpleTest('jms_job_queue_linkable', [$this, 'isLinkable']),
         ];
     }
 
