@@ -21,7 +21,7 @@ class JobQueueExtension extends \Twig_Extension
     public function getFunctions()
     {
         return [
-            new \Twig_SimpleFunction('jms_job_queue_path', 'generatePath', ['is_safe' => ['html' => true]]),
+            new \Twig_SimpleFunction('jms_job_queue_path', [$this, 'generatePath'], ['is_safe' => ['html' => true]]),
         ];
     }
 
