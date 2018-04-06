@@ -3,8 +3,8 @@
 namespace JMS\JobQueueBundle\Controller;
 
 use Doctrine\Common\Util\ClassUtils;
-use JMS\DiExtraBundle\Annotation as DI;
 use JMS\JobQueueBundle\Entity\Job;
+use JMS\JobQueueBundle\Entity\Repository\JobRepository;
 use Pagerfanta\Adapter\DoctrineORMAdapter;
 use Pagerfanta\Pagerfanta;
 use Pagerfanta\View\TwitterBootstrapView;
@@ -15,17 +15,33 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class JobController
 {
-    /** @DI\Inject("doctrine") */
     private $registry;
 
-    /** @DI\Inject */
     private $request;
 
-    /** @DI\Inject */
     private $router;
 
-    /** @DI\Inject("%jms_job_queue.statistics%") */
     private $statisticsEnabled;
+
+    private $jobRepository;
+
+    /**
+     * JobController constructor.
+     *
+     * @param               $registry
+     * @param               $request
+     * @param               $router
+     * @param               $statisticsEnabled
+     * @param JobRepository $jobRepository
+     */
+    public function __construct($registry, $request, $router, $statisticsEnabled, JobRepository $jobRepository)
+    {
+        $this->registry = $registry;
+        $this->request = $request;
+        $this->router = $router;
+        $this->statisticsEnabled = $statisticsEnabled;
+        $this->jobRepository = $jobRepository;
+    }
 
     /**
      * @Route("/", name = "jms_jobs_overview")
@@ -33,7 +49,7 @@ class JobController
      */
     public function overviewAction()
     {
-        $lastJobsWithError = $this->getRepo()->findLastJobsWithError(5);
+        $lastJobsWithError = $this->jobRepository->findLastJobsWithError(5);
 
         $qb = $this->getEm()->createQueryBuilder();
         $qb->select('j')->from('JMSJobQueueBundle:Job', 'j')
@@ -119,7 +135,7 @@ class JobController
         return array(
             'job' => $job,
             'relatedEntities' => $relatedEntities,
-            'incomingDependencies' => $this->getRepo()->getIncomingDependencies($job),
+            'incomingDependencies' => $this->jobRepository->getIncomingDependencies($job),
             'statisticData' => $statisticData,
             'statisticOptions' => $statisticOptions,
         );
@@ -154,11 +170,5 @@ class JobController
     private function getEm()
     {
         return $this->registry->getManagerForClass('JMSJobQueueBundle:Job');
-    }
-
-    /** @return \JMS\JobQueueBundle\Entity\Repository\JobRepository */
-    private function getRepo()
-    {
-        return $this->getEm()->getRepository('JMSJobQueueBundle:Job');
     }
 }

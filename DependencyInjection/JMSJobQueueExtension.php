@@ -18,8 +18,11 @@
 
 namespace JMS\JobQueueBundle\DependencyInjection;
 
+use JMS\JobQueueBundle\Controller\JobController;
+use JMS\JobQueueBundle\Entity\Repository\JobRepository;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\DependencyInjection\Loader;
 
@@ -38,7 +41,7 @@ class JMSJobQueueExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
+        $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.xml');
 
         $container->setParameter('jms_job_queue.statistics', $config['statistics']);
@@ -48,5 +51,20 @@ class JMSJobQueueExtension extends Extension
 
         $container->setParameter('jms_job_queue.queue_options_defaults', $config['queue_options_defaults']);
         $container->setParameter('jms_job_queue.queue_options', $config['queue_options']);
+
+        $container->register('doctrine.orm.job_entity_manager', JobRepository::class)
+            ->addArgument(new Reference('doctrine.orm.entity_manager'))
+            ->addArgument(new Reference('event_dispatcher'))
+            ->addArgument(new Reference('doctrine'))
+            ->setPublic(true)
+        ;
+
+        $container->register('job_controller', JobController::class)
+            ->addArgument(new Reference('doctrine'))
+            ->addArgument(new Reference('request'))
+            ->addArgument(new Reference('router'))
+            ->addArgument(new Reference('jms_job_queue.statistics'))
+            ->addArgument(new Reference('doctrine.orm.job_entity_manager'))
+        ;
     }
 }

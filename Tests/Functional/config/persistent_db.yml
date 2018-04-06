@@ -5,14 +5,13 @@ imports:
 doctrine:
     dbal:
         driver:   pdo_sqlite
-        path:     %kernel.cache_dir%/database.sqlite
+        path:     "%kernel.cache_dir%/database.sqlite"
 
     orm:
-        auto_generate_proxy_classes: %kernel.debug%
+        auto_generate_proxy_classes: "%kernel.debug%"
         entity_managers:
             default:
                 auto_mapping: true
-
 
 jms_job_queue:
     queue_options_defaults:

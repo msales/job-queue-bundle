@@ -28,6 +28,7 @@ class CleanUpCommand extends ContainerAwareCommand
 
         /** @var EntityManager $em */
         $em = $registry->getManagerForClass('JMSJobQueueBundle:Job');
+
         $con = $em->getConnection();
 
         $jobs = $em->createQuery("SELECT j FROM JMSJobQueueBundle:Job j WHERE j.closedAt < :maxRetentionTime AND j.originalJob IS NULL")

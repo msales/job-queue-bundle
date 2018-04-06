@@ -33,6 +33,7 @@ class AppKernel extends Kernel
         }
 
         $this->config = $config;
+
     }
 
     public function registerBundles()
@@ -42,8 +43,6 @@ class AppKernel extends Kernel
             new \Doctrine\Bundle\DoctrineBundle\DoctrineBundle(),
             new \Doctrine\Bundle\FixturesBundle\DoctrineFixturesBundle(),
             new \Symfony\Bundle\TwigBundle\TwigBundle(),
-            new \JMS\AopBundle\JMSAopBundle(),
-            new \JMS\DiExtraBundle\JMSDiExtraBundle($this),
 
             new \JMS\JobQueueBundle\Tests\Functional\TestBundle\TestBundle(),
             new \JMS\JobQueueBundle\JMSJobQueueBundle(),
