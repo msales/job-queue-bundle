@@ -12,10 +12,10 @@
         }
     ],
     "require": {
-        "symfony/framework-bundle": "~4.0",
+        "symfony/framework-bundle": "~3.0|~4.0",
         "doctrine/common": ">=2.3,<3.0",
         "symfony/debug": "~4.0",
-        "symfony/dependency-injection": "^4.0"
+        "symfony/dependency-injection": "~3.0|^4.0"
     },
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "3.0.*",
