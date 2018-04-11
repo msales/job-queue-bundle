@@ -48,7 +48,7 @@ class RunCommandTest extends BaseTestCase
 
     public function testSuccessfulCommand()
     {
-        $job = new Job('help');
+        $job = new Job('jms-job-queue:successful-cmd');
         $this->em->persist($job);
         $this->em->flush($job);
 

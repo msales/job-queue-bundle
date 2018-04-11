@@ -11,12 +11,6 @@
             "email":  "schmittjoh@gmail.com"
         }
     ],
-    "repositories": [
-        {
-            "type": "git",
-            "url": "git@github.com:msales/JMSDiExtraBundle.git"
-        }
-    ],
     "require": {
         "symfony/framework-bundle": "~4.0",
         "doctrine/common": ">=2.3,<3.0",
