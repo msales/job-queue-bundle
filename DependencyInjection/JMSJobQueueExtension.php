@@ -20,6 +20,7 @@ namespace JMS\JobQueueBundle\DependencyInjection;
 
 use JMS\JobQueueBundle\Controller\JobController;
 use JMS\JobQueueBundle\Entity\Repository\JobRepository;
+use JMS\JobQueueBundle\Entity\Job;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Reference;
@@ -54,17 +55,16 @@ class JMSJobQueueExtension extends Extension
 
         $container->register('doctrine.orm.job_entity_manager', JobRepository::class)
             ->addArgument(new Reference('doctrine.orm.entity_manager'))
-            ->addArgument(new Reference('event_dispatcher'))
-            ->addArgument(new Reference('doctrine'))
+            ->addArgument(null)
+            ->addMethodCall('setDispatcher', array(new Reference('event_dispatcher')))
+            ->addMethodCall('setRegistry', array(new Reference('doctrine')))
             ->setPublic(true)
         ;
 
         $container->register('job_controller', JobController::class)
             ->addArgument(new Reference('doctrine'))
-            ->addArgument(new Reference('request'))
             ->addArgument(new Reference('router'))
-            ->addArgument(new Reference('jms_job_queue.statistics'))
-            ->addArgument(new Reference('doctrine.orm.job_entity_manager'))
+            ->addArgument($container->getParameter('jms_job_queue.statistics'))
         ;
     }
 }

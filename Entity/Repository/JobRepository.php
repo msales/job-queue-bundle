@@ -23,6 +23,7 @@ use Doctrine\Common\Util\ClassUtils;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Query\Parameter;
 use Doctrine\ORM\Query\ResultSetMappingBuilder;
 use JMS\JobQueueBundle\Entity\Job;
@@ -40,16 +41,15 @@ class JobRepository extends EntityRepository
     /**
      * JobRepository constructor.
      *
-     * @param EntityManagerInterface   $em
-     * @param EventDispatcherInterface $dispatcher
-     * @param RegistryInterface        $registry
+     * @param EntityManagerInterface $em
+     * @param ClassMetadata|null     $metadata
      */
-    public function __construct(EntityManagerInterface $em, EventDispatcherInterface $dispatcher, RegistryInterface $registry)
+    public function __construct(EntityManagerInterface $em, ClassMetadata $metadata = null)
     {
-        $metadata = $em->getClassMetadata(Job::class);
+        if ($metadata === null) {
+            $metadata = $em->getClassMetadata(Job::class);
+        }
         parent::__construct($em, $metadata);
-        $this->dispatcher = $dispatcher;
-        $this->registry = $registry;
     }
 
     /**
