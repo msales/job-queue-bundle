@@ -65,6 +65,7 @@ class JMSJobQueueExtension extends Extension
             ->addArgument(new Reference('doctrine'))
             ->addArgument(new Reference('router'))
             ->addArgument($container->getParameter('jms_job_queue.statistics'))
+            ->addArgument(new Reference('doctrine.orm.job_entity_manager'))
         ;
     }
 }
