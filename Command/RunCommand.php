@@ -24,10 +24,8 @@ use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Bridge\Doctrine\ManagerRegistry;
 use Symfony\Component\Process\Exception\ProcessFailedException;
-use JMS\JobQueueBundle\Exception\LogicException;
 use JMS\JobQueueBundle\Exception\InvalidArgumentException;
 use JMS\JobQueueBundle\Event\NewOutputEvent;
-use Symfony\Component\Process\ProcessBuilder;
 use Symfony\Component\Process\Process;
 use JMS\JobQueueBundle\Entity\Job;
 use JMS\JobQueueBundle\Event\StateChangeEvent;
@@ -56,10 +54,10 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
     private $dispatcher;
 
     /** @var array */
-    private $runningJobs = array();
+    private $runningJobs = [];
 
     /** @var array */
-    private $restrictedQueues = array();
+    private $restrictedQueues = [];
 
     protected function configure()
     {
@@ -67,9 +65,27 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
             ->setName('jms-job-queue:run')
             ->setDescription('Runs jobs from the queue.')
             ->addOption('max-runtime', 'r', InputOption::VALUE_REQUIRED, 'The maximum runtime in seconds.', 900)
-            ->addOption('max-concurrent-jobs', 'j', InputOption::VALUE_REQUIRED, 'The maximum number of concurrent jobs.', 4)
-            ->addOption('idle-time', null, InputOption::VALUE_REQUIRED, 'Time to sleep when the queue ran out of jobs.', 2)
-            ->addOption('queue', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Restrict to one or more queues.', array())
+            ->addOption(
+                'max-concurrent-jobs',
+                'j',
+                InputOption::VALUE_REQUIRED,
+                'The maximum number of concurrent jobs.',
+                4
+            )
+            ->addOption(
+                'idle-time',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Time to sleep when the queue ran out of jobs.',
+                2
+            )
+            ->addOption(
+                'queue',
+                null,
+                InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
+                'Restrict to one or more queues.',
+                []
+            )
         ;
     }
 
@@ -136,13 +152,14 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
 
     private function startJobs($idleTime, $maxJobs, $queueOptionsDefaults, $queueOptions)
     {
-        $excludedIds = array();
+        $excludedIds = [];
         while (count($this->runningJobs) < $maxJobs) {
             $pendingJob = $this->getRepository()->findStartableJob(
                 $excludedIds,
                 $this->getExcludedQueues($queueOptionsDefaults, $queueOptions, $maxJobs),
                 $this->restrictedQueues
-            );
+            )
+            ;
 
             if (null === $pendingJob) {
                 sleep($idleTime);
@@ -156,9 +173,14 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
 
     private function getExcludedQueues(array $queueOptionsDefaults, array $queueOptions, $maxConcurrentJobs)
     {
-        $excludedQueues = array();
+        $excludedQueues = [];
         foreach ($this->getRunningJobsPerQueue() as $queue => $count) {
-            if ($count >= $this->getMaxConcurrentJobs($queue, $queueOptionsDefaults, $queueOptions, $maxConcurrentJobs)) {
+            if ($count >= $this->getMaxConcurrentJobs(
+                    $queue,
+                    $queueOptionsDefaults,
+                    $queueOptions,
+                    $maxConcurrentJobs
+                )) {
                 $excludedQueues[] = $queue;
             }
         }
@@ -181,13 +203,13 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
 
     private function getRunningJobsPerQueue()
     {
-        $runningJobsPerQueue = array();
+        $runningJobsPerQueue = [];
         foreach ($this->runningJobs as $jobDetails) {
             /** @var Job $job */
             $job = $jobDetails['job'];
 
             $queue = $job->getQueue();
-            if ( ! isset($runningJobsPerQueue[$queue])) {
+            if (!isset($runningJobsPerQueue[$queue])) {
                 $runningJobsPerQueue[$queue] = 0;
             }
             $runningJobsPerQueue[$queue] += 1;
@@ -205,25 +227,37 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
             $newErrorOutput = substr($data['process']->getErrorOutput(), $data['error_output_pointer']);
             $data['error_output_pointer'] += strlen($newErrorOutput);
 
-            if ( ! empty($newOutput)) {
+            if (!empty($newOutput)) {
                 $event = new NewOutputEvent($data['job'], $newOutput, NewOutputEvent::TYPE_STDOUT);
                 $this->dispatcher->dispatch('jms_job_queue.new_job_output', $event);
                 $newOutput = $event->getNewOutput();
             }
 
-            if ( ! empty($newErrorOutput)) {
+            if (!empty($newErrorOutput)) {
                 $event = new NewOutputEvent($data['job'], $newErrorOutput, NewOutputEvent::TYPE_STDERR);
                 $this->dispatcher->dispatch('jms_job_queue.new_job_output', $event);
                 $newErrorOutput = $event->getNewOutput();
             }
 
             if ($this->verbose) {
-                if ( ! empty($newOutput)) {
-                    $this->output->writeln('Job '.$data['job']->getId().': '.str_replace("\n", "\nJob ".$data['job']->getId().": ", $newOutput));
+                if (!empty($newOutput)) {
+                    $this->output->writeln(
+                        'Job ' . $data['job']->getId() . ': ' . str_replace(
+                            "\n",
+                            "\nJob " . $data['job']->getId() . ": ",
+                            $newOutput
+                        )
+                    );
                 }
 
-                if ( ! empty($newErrorOutput)) {
-                    $this->output->writeln('Job '.$data['job']->getId().': '.str_replace("\n", "\nJob ".$data['job']->getId().": ", $newErrorOutput));
+                if (!empty($newErrorOutput)) {
+                    $this->output->writeln(
+                        'Job ' . $data['job']->getId() . ': ' . str_replace(
+                            "\n",
+                            "\nJob " . $data['job']->getId() . ": ",
+                            $newErrorOutput
+                        )
+                    );
                 }
             }
 
@@ -233,7 +267,7 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
             if ($data['job']->getMaxRuntime() > 0 && $runtime > $data['job']->getMaxRuntime()) {
                 $data['process']->stop(5);
 
-                $this->output->writeln($data['job'].' terminated; maximum runtime exceeded.');
+                $this->output->writeln($data['job'] . ' terminated; maximum runtime exceeded.');
                 $this->getRepository()->closeJob($data['job'], Job::STATE_TERMINATED);
                 unset($this->runningJobs[$i]);
 
@@ -252,7 +286,7 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
                 continue;
             }
 
-            $this->output->writeln($data['job'].' finished with exit code '.$data['process']->getExitCode().'.');
+            $this->output->writeln($data['job'] . ' finished with exit code ' . $data['process']->getExitCode() . '.');
 
             // If the Job exited with an exception, let's reload it so that we
             // get access to the stack trace. This might be useful for listeners.
@@ -292,26 +326,23 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
         $em->persist($job);
         $em->flush($job);
 
-        $pb = $this->getCommandProcessBuilder();
-        $pb
-            ->add($job->getCommand())
-            ->add('--jms-job-id='.$job->getId())
-        ;
+        $processlist = $this->buildProcessList() . ' ' . $job->getCommand() . ' --jms-job-id=' . $job->getId();
 
         foreach ($job->getArgs() as $arg) {
-            $pb->add($arg);
+            $processlist .= ' ' . $arg;
         }
-        $proc = $pb->getProcess();
+
+        $proc = new Process($processlist);
         $proc->start();
         $this->output->writeln(sprintf('Started %s.', $job));
 
-        $this->runningJobs[] = array(
-            'process' => $proc,
-            'job' => $job,
-            'start_time' => time(),
-            'output_pointer' => 0,
+        $this->runningJobs[] = [
+            'process'              => $proc,
+            'job'                  => $job,
+            'start_time'           => time(),
+            'output_pointer'       => 0,
             'error_output_pointer' => 0,
-        );
+        ];
     }
 
     /**
@@ -330,49 +361,43 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
             // If the original job has retry jobs, then one of them is still in
             // running state. We can skip the original job here as it will be
             // processed automatically once the retry job is processed.
-            if ( ! $job->isRetryJob() && count($job->getRetryJobs()) > 0) {
+            if (!$job->isRetryJob() && count($job->getRetryJobs()) > 0) {
                 continue;
             }
 
-            $pb = $this->getCommandProcessBuilder();
-            $pb
-                ->add('jms-job-queue:mark-incomplete')
-                ->add($job->getId())
-                ->add('--env='.$this->env)
-                ->add('--verbose')
-            ;
-
+            $processlist = $this->buildProcessList() . ' jms-job-queue:mark-incomplete ' . $job->getId(
+                ) . ' --env=' . $this->env . ' --verbose';
             // We use a separate process to clean up.
-            $proc = $pb->getProcess();
+
+            $proc = new Process($processlist);
             if (0 !== $proc->run()) {
                 $ex = new ProcessFailedException($proc);
 
-                $this->output->writeln(sprintf('There was an error when marking %s as incomplete: %s', $job, $ex->getMessage()));
+                $this->output->writeln(
+                    sprintf('There was an error when marking %s as incomplete: %s', $job, $ex->getMessage())
+                );
             }
         }
     }
 
-    private function getCommandProcessBuilder()
+    private function buildProcessList()
     {
-        $pb = new ProcessBuilder();
-
+        $processlist = '';
         // PHP wraps the process in "sh -c" by default, but we need to control
         // the process directly.
-        if ( ! defined('PHP_WINDOWS_VERSION_MAJOR')) {
-            $pb->add('exec');
+        if (!defined('PHP_WINDOWS_VERSION_MAJOR')) {
+            $processlist .= ' exec';
         }
 
-        $pb
-            ->add('php')
-            ->add($this->getContainer()->getParameter('kernel.root_dir').'/console')
-            ->add('--env='.$this->env)
-        ;
+        $processlist .= ' php ' . $this->getContainer()->getParameter(
+                'kernel.root_dir'
+            ) . '/console ' . '--env=' . $this->env;
 
         if ($this->verbose) {
-            $pb->add('--verbose');
+            $processlist .= ' --verbose';
         }
 
-        return $pb;
+        return $processlist;
     }
 
     /**
@@ -388,6 +413,6 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
      */
     private function getRepository()
     {
-        return $this->getEntityManager()->getRepository('JMSJobQueueBundle:Job');
+        return $this->getContainer()->get('doctrine.orm.job_entity_manager');
     }
 }

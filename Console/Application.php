@@ -2,7 +2,7 @@
 
 namespace JMS\JobQueueBundle\Console;
 
-declare(ticks = 10000000);
+declare(ticks=10000000);
 
 use Doctrine\DBAL\Statement;
 use Doctrine\DBAL\Types\Type;
@@ -22,18 +22,22 @@ use Symfony\Component\HttpKernel\KernelInterface;
 class Application extends BaseApplication
 {
     private $insertStatStmt;
+
     private $input;
 
     public function __construct(KernelInterface $kernel)
     {
         parent::__construct($kernel);
 
-        $this->getDefinition()->addOption(new InputOption('--jms-job-id', null, InputOption::VALUE_REQUIRED, 'The ID of the Job.'));
+        $this->getDefinition()->addOption(
+            new InputOption('--jms-job-id', null, InputOption::VALUE_REQUIRED, 'The ID of the Job.')
+        )
+        ;
 
         $kernel->boot();
         if ($kernel->getContainer()->getParameter('jms_job_queue.statistics')) {
             $this->insertStatStmt = "INSERT INTO jms_job_statistics (job_id, characteristic, createdAt, charValue) VALUES (:jobId, :name, :createdAt, :value)";
-            register_tick_function(array($this, 'onTick'));
+            register_tick_function([$this, 'onTick']);
         }
     }
 
@@ -55,15 +59,15 @@ class Application extends BaseApplication
 
     public function onTick()
     {
-        if ( ! $this->input->hasOption('jms-job-id') || null === $jobId = $this->input->getOption('jms-job-id')) {
+        if (!$this->input->hasOption('jms-job-id') || null === $jobId = $this->input->getOption('jms-job-id')) {
             return;
         }
 
-        $characteristics = array(
+        $characteristics = [
             'memory' => memory_get_usage(),
-        );
+        ];
 
-        if(!$this->insertStatStmt instanceof Statement){
+        if (!$this->insertStatStmt instanceof Statement) {
             $this->insertStatStmt = $this->getConnection()->prepare($this->insertStatStmt);
         }
 
@@ -79,29 +83,33 @@ class Application extends BaseApplication
 
     private function saveDebugInformation(\Exception $ex = null)
     {
-        if ( ! $this->input->hasOption('jms-job-id') || null === $jobId = $this->input->getOption('jms-job-id')) {
+        if (!$this->input->hasOption('jms-job-id') || null === $jobId = $this->input->getOption('jms-job-id')) {
             return;
         }
 
         $this->getConnection()->executeUpdate(
             "UPDATE jms_jobs SET stackTrace = :trace, memoryUsage = :memoryUsage, memoryUsageReal = :memoryUsageReal WHERE id = :id",
-            array(
-                'id' => $jobId,
-                'memoryUsage' => memory_get_peak_usage(),
+            [
+                'id'              => $jobId,
+                'memoryUsage'     => memory_get_peak_usage(),
                 'memoryUsageReal' => memory_get_peak_usage(true),
-                'trace' => serialize($ex ? FlattenException::create($ex) : null),
-            ),
-            array(
-                'id' => \PDO::PARAM_INT,
-                'memoryUsage' => \PDO::PARAM_INT,
+                'trace'           => serialize($ex ? FlattenException::create($ex) : null),
+            ],
+            [
+                'id'              => \PDO::PARAM_INT,
+                'memoryUsage'     => \PDO::PARAM_INT,
                 'memoryUsageReal' => \PDO::PARAM_INT,
-                'trace' => \PDO::PARAM_LOB,
-            )
-        );
+                'trace'           => \PDO::PARAM_LOB,
+            ]
+        )
+        ;
     }
 
     private function getConnection()
     {
-        return $this->getKernel()->getContainer()->get('doctrine')->getManagerForClass('JMSJobQueueBundle:Job')->getConnection();
+        return $this->getKernel()->getContainer()->get('doctrine')->getManagerForClass(
+            'JMSJobQueueBundle:Job'
+        )->getConnection()
+            ;
     }
 }

@@ -24,8 +24,8 @@ class MarkJobIncompleteCommand extends ContainerAwareCommand
         $c = $this->getContainer();
 
         $em = $c->get('doctrine')->getManagerForClass('JMSJobQueueBundle:Job');
-        $repo = $em->getRepository('JMSJobQueueBundle:Job');
-
+        $repo = $this->getContainer()->get('doctrine.orm.job_entity_manager');
+        
         $repo->closeJob($em->find('JMSJobQueueBundle:Job', $input->getArgument('job-id')), Job::STATE_INCOMPLETE);
     }
 }
