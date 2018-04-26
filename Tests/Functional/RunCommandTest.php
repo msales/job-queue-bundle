@@ -294,9 +294,6 @@ OUTPUT
         $this->app = new Application(self::$kernel);
         $this->app->setAutoExit(false);
         $this->app->setCatchExceptions(false);
-        $this->app->add(new RunCommand());
-        $this->app->add(new CleanUpCommand());
-        $this->app->add(new MarkJobIncompleteCommand());
 
         $this->em = self::$kernel->getContainer()->get('doctrine')->getManagerForClass('JMSJobQueueBundle:Job');
     }

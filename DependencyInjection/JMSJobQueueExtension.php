@@ -18,9 +18,12 @@
 
 namespace JMS\JobQueueBundle\DependencyInjection;
 
-use JMS\JobQueueBundle\Controller\JobController;
-use JMS\JobQueueBundle\Entity\Repository\JobRepository;
+use JMS\JobQueueBundle\Command\CleanUpCommand;
+use JMS\JobQueueBundle\Command\MarkJobIncompleteCommand;
+use JMS\JobQueueBundle\Command\RunCommand;
 use JMS\JobQueueBundle\Entity\Job;
+use JMS\JobQueueBundle\Entity\Repository\JobManager;
+use JMS\JobQueueBundle\Entity\Repository\JobRepository;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Reference;
@@ -53,19 +56,34 @@ class JMSJobQueueExtension extends Extension
         $container->setParameter('jms_job_queue.queue_options_defaults', $config['queue_options_defaults']);
         $container->setParameter('jms_job_queue.queue_options', $config['queue_options']);
 
-        $container->register('doctrine.orm.job_entity_manager', JobRepository::class)
+        $container->register('doctrine.orm.job_entity_repository', JobRepository::class)
+            ->setFactory([new Reference("doctrine.orm.entity_manager"), 'getRepository'])
+            ->addArgument('JMSJobQueueBundle:Job')
+        ;
+
+        $container->register('doctrine.orm.job_manager', JobManager::class)
+            ->addArgument(new Reference('doctrine.orm.job_entity_repository'))
             ->addArgument(new Reference('doctrine.orm.entity_manager'))
-            ->addArgument(null)
-            ->addMethodCall('setDispatcher', array(new Reference('event_dispatcher')))
-            ->addMethodCall('setRegistry', array(new Reference('doctrine')))
+            ->addArgument(new Reference('event_dispatcher'))
             ->setPublic(true)
         ;
 
-        $container->register('job_controller', JobController::class)
-            ->addArgument(new Reference('doctrine'))
-            ->addArgument(new Reference('router'))
-            ->addArgument($container->getParameter('jms_job_queue.statistics'))
-            ->addArgument(new Reference('doctrine.orm.job_entity_manager'))
+        $container->register(RunCommand::class)
+            ->addArgument(new Reference('doctrine.orm.job_manager'))
+            ->addArgument($container->getParameter('jms_job_queue.queue_options_defaults'))
+            ->addArgument($container->getParameter('jms_job_queue.queue_options'))
+            ->addArgument($container->getParameter('kernel.root_dir'))
+            ->addTag('console.command', ['command' => 'jms-job-queue:run'])
+        ;
+
+        $container->register(MarkJobIncompleteCommand::class)
+            ->addArgument(new Reference('doctrine.orm.job_manager'))
+            ->addTag('console.command', ['command' => 'jms-job-queue:mark-incomplete'])
+        ;
+
+        $container->register(CleanUpCommand::class)
+            ->addArgument(new Reference('doctrine.orm.entity_manager'))
+            ->addTag('console.command', ['command' => 'jms-job-queue:clean-up'])
         ;
     }
 }

@@ -19,30 +19,37 @@
 namespace JMS\JobQueueBundle\Event;
 
 use JMS\JobQueueBundle\Entity\Job;
-use JMS\JobQueueBundle\Event\JobEvent;
 
 class StateChangeEvent extends JobEvent
 {
+    /** @var string */
     private $newState;
 
-    public function __construct(Job $job, $newState)
+    /**
+     * StateChangeEvent constructor.
+     *
+     * @param Job $job
+     * @param     $newState
+     */
+    public function __construct(Job $job, $newState = '')
     {
         parent::__construct($job);
 
         $this->newState = $newState;
     }
 
-    public function getNewState()
+    /**
+     * @return mixed
+     */
+    public function getNewState(): string
     {
         return $this->newState;
     }
 
-    public function setNewState($state)
-    {
-        $this->newState = $state;
-    }
-
-    public function getOldState()
+    /**
+     * @return string
+     */
+    public function getOldState(): string
     {
         return $this->getJob()->getState();
     }

@@ -18,11 +18,12 @@
 
 namespace JMS\JobQueueBundle\Command;
 
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
+use JMS\JobQueueBundle\Entity\Repository\JobManager;
 use JMS\JobQueueBundle\Entity\Repository\JobRepository;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Bridge\Doctrine\ManagerRegistry;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use JMS\JobQueueBundle\Exception\InvalidArgumentException;
 use JMS\JobQueueBundle\Event\NewOutputEvent;
@@ -33,8 +34,11 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand
+class RunCommand extends Command
 {
+    /** @var string */
+    protected static $defaultName = 'jms-job-queue:run';
+
     /** @var string */
     private $env;
 
@@ -47,9 +51,6 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
     /** @var InputInterface */
     private $input;
 
-    /** @var ManagerRegistry */
-    private $registry;
-
     /** @var EventDispatcher */
     private $dispatcher;
 
@@ -59,10 +60,48 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
     /** @var array */
     private $restrictedQueues = [];
 
+    /** @var EntityManagerInterface|EntityManagerInterface */
+    private $entityManager;
+
+    /** @var JobRepository */
+    private $jobRepository;
+
+    /** @var JobManager */
+    private $jobManager;
+
+    /** @var mixed */
+    private $queueOptionsDefault;
+
+    /** @var mixed */
+    private $queueOptions;
+
+    /** @var string */
+    private $kernelDir;
+
+    /**
+     * RunCommand constructor.
+     *
+     * @param JobManager $jobManager
+     * @param mixed      $queueOptionsDefault
+     * @param mixed      $queueOptions
+     * @param string     $kernelDir
+     */
+    public function __construct(JobManager $jobManager, $queueOptionsDefault, $queueOptions, $kernelDir)
+    {
+        parent::__construct(self::$defaultName);
+        $this->jobManager = $jobManager;
+        $this->entityManager = $jobManager->getEntityManager();
+        $this->jobRepository = $jobManager->getJobRepository();
+        $this->dispatcher = $jobManager->getDispatcher();
+        $this->queueOptionsDefault = $queueOptionsDefault;
+        $this->queueOptions = $queueOptions;
+        $this->kernelDir = $kernelDir;
+    }
+
     protected function configure()
     {
         $this
-            ->setName('jms-job-queue:run')
+            ->setName(self::$defaultName)
             ->setDescription('Runs jobs from the queue.')
             ->addOption('max-runtime', 'r', InputOption::VALUE_REQUIRED, 'The maximum runtime in seconds.', 900)
             ->addOption(
@@ -89,6 +128,15 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
         ;
     }
 
+    /**
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     *
+     * @return int|null|void
+     * @throws \Doctrine\DBAL\ConnectionException
+     * @throws \Doctrine\ORM\NonUniqueResultException
+     * @throws \Exception
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $startTime = time();
@@ -114,9 +162,7 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
         $this->verbose = $input->getOption('verbose');
         $this->output = $output;
         $this->input = $input;
-        $this->registry = $this->getContainer()->get('doctrine');
-        $this->dispatcher = $this->getContainer()->get('event_dispatcher');
-        $this->getEntityManager()->getConnection()->getConfiguration()->setSQLLogger(null);
+        $this->entityManager->getConnection()->getConfiguration()->setSQLLogger(null);
 
         $this->cleanUpStaleJobs();
 
@@ -125,11 +171,23 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
             $maxRuntime,
             $idleTime,
             $maxJobs,
-            $this->getContainer()->getParameter('jms_job_queue.queue_options_defaults'),
-            $this->getContainer()->getParameter('jms_job_queue.queue_options')
+            $this->queueOptionsDefault,
+            $this->queueOptions
         );
     }
 
+    /**
+     * @param       $startTime
+     * @param       $maxRuntime
+     * @param       $idleTime
+     * @param       $maxJobs
+     * @param array $queueOptionsDefaults
+     * @param array $queueOptions
+     *
+     * @throws \Doctrine\DBAL\ConnectionException
+     * @throws \Doctrine\ORM\NonUniqueResultException
+     * @throws \Exception
+     */
     private function runJobs($startTime, $maxRuntime, $idleTime, $maxJobs, array $queueOptionsDefaults, array $queueOptions)
     {
         $waitTime = 1;
@@ -150,16 +208,25 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
         }
     }
 
+    /**
+     * @param $idleTime
+     * @param $maxJobs
+     * @param $queueOptionsDefaults
+     * @param $queueOptions
+     *
+     * @throws \Doctrine\DBAL\ConnectionException
+     * @throws \Doctrine\ORM\NonUniqueResultException
+     * @throws \Exception
+     */
     private function startJobs($idleTime, $maxJobs, $queueOptionsDefaults, $queueOptions)
     {
         $excludedIds = [];
         while (count($this->runningJobs) < $maxJobs) {
-            $pendingJob = $this->getRepository()->findStartableJob(
+            $pendingJob = $this->jobRepository->findStartableJob(
                 $excludedIds,
                 $this->getExcludedQueues($queueOptionsDefaults, $queueOptions, $maxJobs),
                 $this->restrictedQueues
-            )
-            ;
+            );
 
             if (null === $pendingJob) {
                 sleep($idleTime);
@@ -218,6 +285,10 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
         return $runningJobsPerQueue;
     }
 
+    /**
+     * @throws \Doctrine\DBAL\ConnectionException
+     * @throws \Exception
+     */
     private function checkRunningJobs()
     {
         foreach ($this->runningJobs as $i => &$data) {
@@ -268,7 +339,7 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
                 $data['process']->stop(5);
 
                 $this->output->writeln($data['job'] . ' terminated; maximum runtime exceeded.');
-                $this->getRepository()->closeJob($data['job'], Job::STATE_TERMINATED);
+                $this->jobManager->closeJob($data['job'], Job::STATE_TERMINATED);
                 unset($this->runningJobs[$i]);
 
                 continue;
@@ -279,7 +350,7 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
                 $data['job']->addOutput($newOutput);
                 $data['job']->addErrorOutput($newErrorOutput);
                 $data['job']->checked();
-                $em = $this->getEntityManager();
+                $em = $this->entityManager;
                 $em->persist($data['job']);
                 $em->flush($data['job']);
 
@@ -290,7 +361,7 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
 
             // If the Job exited with an exception, let's reload it so that we
             // get access to the stack trace. This might be useful for listeners.
-            $this->getEntityManager()->refresh($data['job']);
+            $this->entityManager->refresh($data['job']);
 
             $data['job']->setExitCode($data['process']->getExitCode());
             $data['job']->setOutput($data['process']->getOutput());
@@ -298,13 +369,19 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
             $data['job']->setRuntime(time() - $data['start_time']);
 
             $newState = 0 === $data['process']->getExitCode() ? Job::STATE_FINISHED : Job::STATE_FAILED;
-            $this->getRepository()->closeJob($data['job'], $newState);
+            $this->jobManager->closeJob($data['job'], $newState);
             unset($this->runningJobs[$i]);
         }
 
         gc_collect_cycles();
     }
 
+    /**
+     * @param Job $job
+     *
+     * @throws \Doctrine\DBAL\ConnectionException
+     * @throws \Exception
+     */
     private function startJob(Job $job)
     {
         $event = new StateChangeEvent($job, Job::STATE_RUNNING);
@@ -312,7 +389,7 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
         $newState = $event->getNewState();
 
         if (Job::STATE_CANCELED === $newState) {
-            $this->getRepository()->closeJob($job, Job::STATE_CANCELED);
+            $this->jobManager->closeJob($job, Job::STATE_CANCELED);
 
             return;
         }
@@ -322,7 +399,7 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
         }
 
         $job->setState(Job::STATE_RUNNING);
-        $em = $this->getEntityManager();
+        $em = $this->entityManager;
         $em->persist($job);
         $em->flush($job);
 
@@ -356,7 +433,7 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
      */
     private function cleanUpStaleJobs()
     {
-        $repo = $this->getRepository();
+        $repo = $this->jobRepository;
         foreach ($repo->findRunningJobs($this->restrictedQueues) as $job) {
             // If the original job has retry jobs, then one of them is still in
             // running state. We can skip the original job here as it will be
@@ -380,6 +457,9 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
         }
     }
 
+    /**
+     * @return string
+     */
     private function buildProcessList()
     {
         $processlist = '';
@@ -389,30 +469,12 @@ class RunCommand extends \Symfony\Bundle\FrameworkBundle\Command\ContainerAwareC
             $processlist .= ' exec';
         }
 
-        $processlist .= ' php ' . $this->getContainer()->getParameter(
-                'kernel.root_dir'
-            ) . '/console ' . '--env=' . $this->env;
+        $processlist .= ' php ' . $this->kernelDir . '/console ' . '--env=' . $this->env;
 
         if ($this->verbose) {
             $processlist .= ' --verbose';
         }
 
         return $processlist;
-    }
-
-    /**
-     * @return EntityManager
-     */
-    private function getEntityManager()
-    {
-        return $this->registry->getManagerForClass('JMSJobQueueBundle:Job');
-    }
-
-    /**
-     * @return JobRepository
-     */
-    private function getRepository()
-    {
-        return $this->getContainer()->get('doctrine.orm.job_entity_manager');
     }
 }

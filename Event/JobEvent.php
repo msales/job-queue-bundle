@@ -23,14 +23,23 @@ use Symfony\Component\EventDispatcher\Event;
 
 abstract class JobEvent extends Event
 {
+    /** @var Job */
     private $job;
 
+    /**
+     * JobEvent constructor.
+     *
+     * @param Job $job
+     */
     public function __construct(Job $job)
     {
         $this->job = $job;
     }
 
-    public function getJob()
+    /**
+     * @return Job
+     */
+    public function getJob(): Job
     {
         return $this->job;
     }

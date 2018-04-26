@@ -32,6 +32,9 @@ class JMSJobQueueBundle extends Bundle
         $container->addCompilerPass(new LinkGeneratorsPass());
     }
 
+    /**
+     * @throws \Doctrine\DBAL\DBALException
+     */
     public function boot()
     {
         if ( ! Type::hasType('jms_job_safe_object')) {

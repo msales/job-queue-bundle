@@ -23,8 +23,16 @@ class Application extends BaseApplication
 {
     private $insertStatStmt;
 
+    /**
+     * @var InputInterface
+     */
     private $input;
 
+    /**
+     * Application constructor.
+     *
+     * @param KernelInterface $kernel
+     */
     public function __construct(KernelInterface $kernel)
     {
         parent::__construct($kernel);
@@ -41,6 +49,13 @@ class Application extends BaseApplication
         }
     }
 
+    /**
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     *
+     * @return int
+     * @throws \Exception
+     */
     public function doRun(InputInterface $input, OutputInterface $output)
     {
         $this->input = $input;
@@ -57,6 +72,9 @@ class Application extends BaseApplication
         }
     }
 
+    /**
+     * @throws \Doctrine\DBAL\DBALException
+     */
     public function onTick()
     {
         if (!$this->input->hasOption('jms-job-id') || null === $jobId = $this->input->getOption('jms-job-id')) {
@@ -81,6 +99,9 @@ class Application extends BaseApplication
         }
     }
 
+    /**
+     * @param \Exception|null $ex
+     */
     private function saveDebugInformation(\Exception $ex = null)
     {
         if (!$this->input->hasOption('jms-job-id') || null === $jobId = $this->input->getOption('jms-job-id')) {
@@ -105,6 +126,9 @@ class Application extends BaseApplication
         ;
     }
 
+    /**
+     * @return mixed
+     */
     private function getConnection()
     {
         return $this->getKernel()->getContainer()->get('doctrine')->getManagerForClass(

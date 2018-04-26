@@ -177,16 +177,15 @@ class Job
      */
     private $relatedEntities;
 
-    public static function create($command, array $args = array(), $confirmed = true, $queue = self::DEFAULT_QUEUE, $priority = self::PRIORITY_DEFAULT)
-    {
-        return new self($command, $args, $confirmed, $queue, $priority);
-    }
-
-    public static function isNonSuccessfulFinalState($state)
-    {
-        return in_array($state, array(self::STATE_CANCELED, self::STATE_FAILED, self::STATE_INCOMPLETE, self::STATE_TERMINATED), true);
-    }
-
+    /**
+     * Job constructor.
+     *
+     * @param        $command
+     * @param array  $args
+     * @param bool   $confirmed
+     * @param string $queue
+     * @param int    $priority
+     */
     public function __construct($command, array $args = array(), $confirmed = true, $queue = self::DEFAULT_QUEUE, $priority = self::PRIORITY_DEFAULT)
     {
         if (trim($queue) === '') {
@@ -209,6 +208,9 @@ class Job
         $this->relatedEntities = new ArrayCollection();
     }
 
+    /**
+     * Job clone.
+     */
     public function __clone()
     {
         $this->state = self::STATE_PENDING;
@@ -226,21 +228,33 @@ class Job
         $this->relatedEntities = new ArrayCollection();
     }
 
+    /**
+     * @return mixed
+     */
     public function getId()
     {
         return $this->id;
     }
 
+    /**
+     * @return string
+     */
     public function getState()
     {
         return $this->state;
     }
 
+    /**
+     * @return float|int
+     */
     public function getPriority()
     {
         return $this->priority * -1;
     }
 
+    /**
+     * @return bool
+     */
     public function isStartable()
     {
         foreach ($this->dependencies as $dep) {
@@ -252,6 +266,9 @@ class Job
         return true;
     }
 
+    /**
+     * @param $newState
+     */
     public function setState($newState)
     {
         if ($newState === $this->state) {
@@ -306,46 +323,75 @@ class Job
         $this->state = $newState;
     }
 
+    /**
+     * @return \DateTime
+     */
     public function getCreatedAt()
     {
         return $this->createdAt;
     }
 
+    /**
+     * @return mixed
+     */
     public function getClosedAt()
     {
         return $this->closedAt;
     }
 
+    /**
+     * @return static
+     */
     public function getExecuteAfter()
     {
         return $this->executeAfter;
     }
 
+    /**
+     * @param \DateTime $executeAfter
+     */
     public function setExecuteAfter(\DateTime $executeAfter)
     {
         $this->executeAfter = $executeAfter;
     }
 
+    /**
+     * @return mixed
+     */
     public function getCommand()
     {
         return $this->command;
     }
 
+    /**
+     * @return array
+     */
     public function getArgs()
     {
         return $this->args;
     }
 
+    /**
+     * @return ArrayCollection
+     */
     public function getRelatedEntities()
     {
         return $this->relatedEntities;
     }
 
+    /**
+     * @return bool
+     */
     public function isClosedNonSuccessful()
     {
-        return self::isNonSuccessfulFinalState($this->state);
+        return in_array($this->state, array(self::STATE_CANCELED, self::STATE_FAILED, self::STATE_INCOMPLETE, self::STATE_TERMINATED), true);
     }
 
+    /**
+     * @param $class
+     *
+     * @return mixed|null
+     */
     public function findRelatedEntity($class)
     {
         foreach ($this->relatedEntities as $entity) {
@@ -357,6 +403,9 @@ class Job
         return null;
     }
 
+    /**
+     * @param $entity
+     */
     public function addRelatedEntity($entity)
     {
         assert('is_object($entity)');
@@ -368,16 +417,27 @@ class Job
         $this->relatedEntities->add($entity);
     }
 
+    /**
+     * @return ArrayCollection
+     */
     public function getDependencies()
     {
         return $this->dependencies;
     }
 
+    /**
+     * @param Job $job
+     *
+     * @return bool
+     */
     public function hasDependency(Job $job)
     {
         return $this->dependencies->contains($job);
     }
 
+    /**
+     * @param Job $job
+     */
     public function addDependency(Job $job)
     {
         if ($this->dependencies->contains($job)) {
@@ -391,91 +451,145 @@ class Job
         $this->dependencies->add($job);
     }
 
+    /**
+     * @return mixed
+     */
     public function getRuntime()
     {
         return $this->runtime;
     }
 
+    /**
+     * @param $time
+     */
     public function setRuntime($time)
     {
         $this->runtime = (integer) $time;
     }
 
+    /**
+     * @return mixed
+     */
     public function getMemoryUsage()
     {
         return $this->memoryUsage;
     }
 
+    /**
+     * @return mixed
+     */
     public function getMemoryUsageReal()
     {
         return $this->memoryUsageReal;
     }
 
+    /**
+     * @param $output
+     */
     public function addOutput($output)
     {
         $this->output .= $output;
     }
 
+    /**
+     * @param $output
+     */
     public function addErrorOutput($output)
     {
         $this->errorOutput .= $output;
     }
 
+    /**
+     * @param $output
+     */
     public function setOutput($output)
     {
         $this->output = $output;
     }
 
+    /**
+     * @param $output
+     */
     public function setErrorOutput($output)
     {
         $this->errorOutput = $output;
     }
 
+    /**
+     * @return mixed
+     */
     public function getOutput()
     {
         return $this->output;
     }
 
+    /**
+     * @return mixed
+     */
     public function getErrorOutput()
     {
         return $this->errorOutput;
     }
 
+    /**
+     * @param $code
+     */
     public function setExitCode($code)
     {
         $this->exitCode = $code;
     }
 
+    /**
+     * @return mixed
+     */
     public function getExitCode()
     {
         return $this->exitCode;
     }
 
+    /**
+     * @param $time
+     */
     public function setMaxRuntime($time)
     {
         $this->maxRuntime = (integer) $time;
     }
 
+    /**
+     * @return int
+     */
     public function getMaxRuntime()
     {
         return $this->maxRuntime;
     }
 
+    /**
+     * @return mixed
+     */
     public function getStartedAt()
     {
         return $this->startedAt;
     }
 
+    /**
+     * @return int
+     */
     public function getMaxRetries()
     {
         return $this->maxRetries;
     }
 
+    /**
+     * @param $tries
+     */
     public function setMaxRetries($tries)
     {
         $this->maxRetries = (integer) $tries;
     }
 
+    /**
+     * @return bool
+     */
     public function isRetryAllowed()
     {
         // If no retries are allowed, we can bail out directly, and we
@@ -487,6 +601,9 @@ class Job
         return count($this->retryJobs) < $this->maxRetries;
     }
 
+    /**
+     * @return $this
+     */
     public function getOriginalJob()
     {
         if (null === $this->originalJob) {
@@ -496,6 +613,9 @@ class Job
         return $this->originalJob;
     }
 
+    /**
+     * @param Job $job
+     */
     public function setOriginalJob(Job $job)
     {
         if (self::STATE_PENDING !== $this->state) {
@@ -509,6 +629,9 @@ class Job
         $this->originalJob = $job;
     }
 
+    /**
+     * @param Job $job
+     */
     public function addRetryJob(Job $job)
     {
         if (self::STATE_RUNNING !== $this->state) {
@@ -519,86 +642,137 @@ class Job
         $this->retryJobs->add($job);
     }
 
+    /**
+     * @return ArrayCollection
+     */
     public function getRetryJobs()
     {
         return $this->retryJobs;
     }
 
+    /**
+     * @return bool
+     */
     public function isRetryJob()
     {
         return null !== $this->originalJob;
     }
 
+    /**
+     * Mark checkedAt for current time when called.
+     */
     public function checked()
     {
         $this->checkedAt = new \DateTime();
     }
 
+    /**
+     * @return mixed
+     */
     public function getCheckedAt()
     {
         return $this->checkedAt;
     }
 
+    /**
+     * @param FlattenException $ex
+     */
     public function setStackTrace(FlattenException $ex)
     {
         $this->stackTrace = $ex;
     }
 
+    /**
+     * @return mixed
+     */
     public function getStackTrace()
     {
         return $this->stackTrace;
     }
 
+    /**
+     * @return string
+     */
     public function getQueue()
     {
         return $this->queue;
     }
 
+    /**
+     * @return bool
+     */
     public function isNew()
     {
         return self::STATE_NEW === $this->state;
     }
 
+    /**
+     * @return bool
+     */
     public function isPending()
     {
         return self::STATE_PENDING === $this->state;
     }
 
+    /**
+     * @return bool
+     */
     public function isCanceled()
     {
         return self::STATE_CANCELED === $this->state;
     }
 
+    /**
+     * @return bool
+     */
     public function isRunning()
     {
         return self::STATE_RUNNING === $this->state;
     }
 
+    /**
+     * @return bool
+     */
     public function isTerminated()
     {
         return self::STATE_TERMINATED === $this->state;
     }
 
+    /**
+     * @return bool
+     */
     public function isFailed()
     {
         return self::STATE_FAILED === $this->state;
     }
 
+    /**
+     * @return bool
+     */
     public function isFinished()
     {
         return self::STATE_FINISHED === $this->state;
     }
 
+    /**
+     * @return bool
+     */
     public function isIncomplete()
     {
         return self::STATE_INCOMPLETE === $this->state;
     }
 
+    /**
+     * @return string
+     */
     public function __toString()
     {
         return sprintf('Job(id = %s, command = "%s")', $this->id, $this->command);
     }
 
+    /**
+     * @return bool
+     */
     private function mightHaveStarted()
     {
         if (null === $this->id) {
