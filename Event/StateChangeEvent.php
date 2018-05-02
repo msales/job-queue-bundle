@@ -28,10 +28,10 @@ class StateChangeEvent extends JobEvent
     /**
      * StateChangeEvent constructor.
      *
-     * @param Job $job
-     * @param     $newState
+     * @param Job    $job
+     * @param string $newState
      */
-    public function __construct(Job $job, $newState = '')
+    public function __construct(Job $job, string $newState = '')
     {
         parent::__construct($job);
 
@@ -39,7 +39,7 @@ class StateChangeEvent extends JobEvent
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getNewState(): string
     {

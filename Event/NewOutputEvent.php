@@ -35,11 +35,11 @@ class NewOutputEvent extends JobEvent
     /**
      * NewOutputEvent constructor.
      *
-     * @param Job $job
-     * @param     $newOutput
-     * @param int $type
+     * @param Job    $job
+     * @param string $newOutput
+     * @param int    $type
      */
-    public function __construct(Job $job, $newOutput = '', $type = self::TYPE_STDOUT)
+    public function __construct(Job $job, string $newOutput = '', $type = self::TYPE_STDOUT)
     {
         parent::__construct($job);
         $this->newOutput = $newOutput;
