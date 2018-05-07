@@ -2,7 +2,9 @@
 
 namespace JMS\JobQueueBundle\Entity\Listener;
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Tools\Event\GenerateSchemaEventArgs;
 use JMS\JobQueueBundle\Entity\Job;
+use Symfony\Bridge\Doctrine\RegistryInterface;
 
 /**
  * Provides many-to-any association support for jobs.
@@ -16,26 +18,44 @@ use JMS\JobQueueBundle\Entity\Job;
  */
 class ManyToAnyListener
 {
+    /** @var RegistryInterface */
     private $registry;
+
+    /** @var \ReflectionProperty */
     private $ref;
 
-    public function __construct(\Symfony\Bridge\Doctrine\RegistryInterface $registry)
+    /**
+     * ManyToAnyListener constructor.
+     *
+     * @param RegistryInterface $registry
+     *
+     * @throws \ReflectionException
+     */
+    public function __construct(RegistryInterface $registry)
     {
         $this->registry = $registry;
         $this->ref = new \ReflectionProperty('JMS\JobQueueBundle\Entity\Job', 'relatedEntities');
         $this->ref->setAccessible(true);
     }
 
-    public function postLoad(\Doctrine\ORM\Event\LifecycleEventArgs $event)
+    /**
+     * @param LifecycleEventArgs $event
+     */
+    public function postLoad(LifecycleEventArgs $event)
     {
         $entity = $event->getEntity();
-        if ( ! $entity instanceof \JMS\JobQueueBundle\Entity\Job) {
+        if ( ! $entity instanceof Job) {
             return;
         }
 
         $this->ref->setValue($entity, new PersistentRelatedEntitiesCollection($this->registry, $entity));
     }
 
+    /**
+     * @param LifecycleEventArgs $event
+     *
+     * @throws \Doctrine\DBAL\DBALException
+     */
     public function preRemove(LifecycleEventArgs $event)
     {
         $entity = $event->getEntity();
@@ -49,10 +69,15 @@ class ManyToAnyListener
         ));
     }
 
-    public function postPersist(\Doctrine\ORM\Event\LifecycleEventArgs $event)
+    /**
+     * @param LifecycleEventArgs $event
+     *
+     * @throws \Doctrine\DBAL\DBALException
+     */
+    public function postPersist(LifecycleEventArgs $event)
     {
         $entity = $event->getEntity();
-        if ( ! $entity instanceof \JMS\JobQueueBundle\Entity\Job) {
+        if ( ! $entity instanceof Job) {
             return;
         }
 
@@ -74,7 +99,10 @@ class ManyToAnyListener
         }
     }
 
-    public function postGenerateSchema(\Doctrine\ORM\Tools\Event\GenerateSchemaEventArgs $event)
+    /**
+     * @param GenerateSchemaEventArgs $event
+     */
+    public function postGenerateSchema(GenerateSchemaEventArgs $event)
     {
         $schema = $event->getSchema();
 

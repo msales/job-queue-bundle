@@ -8,6 +8,9 @@ use Symfony\Component\DependencyInjection\Reference;
 
 class LinkGeneratorsPass implements CompilerPassInterface
 {
+    /**
+     * @param ContainerBuilder $container
+     */
     public function process(ContainerBuilder $container)
     {
         $generators = array();

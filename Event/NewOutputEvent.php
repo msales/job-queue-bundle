@@ -26,27 +26,38 @@ class NewOutputEvent extends JobEvent
     const TYPE_STDOUT = 1;
     const TYPE_STDERR = 2;
 
+    /** @var string */
     private $newOutput;
+
+    /** @var int */
     private $type;
 
-    public function __construct(Job $job, $newOutput, $type = self::TYPE_STDOUT)
+    /**
+     * NewOutputEvent constructor.
+     *
+     * @param Job    $job
+     * @param string $newOutput
+     * @param int    $type
+     */
+    public function __construct(Job $job, string $newOutput = '', $type = self::TYPE_STDOUT)
     {
         parent::__construct($job);
         $this->newOutput = $newOutput;
         $this->type = $type;
     }
 
-    public function getNewOutput()
+    /**
+     * @return string
+     */
+    public function getNewOutput(): string
     {
         return $this->newOutput;
     }
 
-    public function setNewOutput($output)
-    {
-        $this->newOutput = $output;
-    }
-
-    public function getType()
+    /**
+     * @return int
+     */
+    public function getType(): int
     {
         return $this->type;
     }

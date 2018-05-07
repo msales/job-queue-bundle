@@ -9,9 +9,6 @@ $kernel = new AppKernel('persistent_db.yml');
 $kernel->boot();
 
 $app = new Application($kernel);
-$app->add(new JMS\JobQueueBundle\Command\RunCommand());
-$app->add(new JMS\JobQueueBundle\Command\CleanUpCommand());
-$app->add(new JMS\JobQueueBundle\Command\MarkJobIncompleteCommand());
 
 $app->add(new JMS\JobQueueBundle\Tests\Functional\TestBundle\Command\LoggingCommand());
 $app->add(new JMS\JobQueueBundle\Tests\Functional\TestBundle\Command\NeverEndingCommand());
