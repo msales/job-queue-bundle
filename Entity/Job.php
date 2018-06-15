@@ -118,7 +118,7 @@ class Job
     /** @ORM\Column(type = "datetime", name="closedAt", nullable = true) */
     private $closedAt;
 
-    /** @ORM\Column(type = "string") */
+    /** @ORM\Column(type = "text") */
     private $command;
 
     /** @ORM\Column(type = "json_array") */
