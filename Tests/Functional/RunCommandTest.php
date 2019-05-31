@@ -2,17 +2,16 @@
 
 namespace JMS\JobQueueBundle\Tests\Functional;
 
-use JMS\JobQueueBundle\Command\CleanUpCommand;
-use JMS\JobQueueBundle\Command\MarkJobIncompleteCommand;
-use JMS\JobQueueBundle\Command\RunCommand;
+use Doctrine\ORM\EntityManagerInterface;
 use JMS\JobQueueBundle\Entity\Job;
-use Symfony\Component\Console\Output\Output;
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\Output;
 
 class RunCommandTest extends BaseTestCase
 {
     private $app;
+    /** @var EntityManagerInterface $em */
     private $em;
 
     public function testRun()
@@ -278,7 +277,7 @@ OUTPUT
         $this->doRun(array('--max-runtime' => 1));
 
         $this->assertNotNull($job->getErrorOutput());
-        $this->assertEquals($job->getExitCode(), 255);
+        $this->assertEquals($job->getExitCode(), 1);
     }
 
     protected function setUp()
