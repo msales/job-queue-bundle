@@ -1,14 +1,14 @@
 language: php
 
 php:
-  - 5.3
-  - 5.4
+  - 7.1
+  - 7.2
 
 before_script:
     - curl -s http://getcomposer.org/installer | php
     - php composer.phar install --dev
 
-script: phpunit --coverage-clover clover
+script: vendor/phpunit/phpunit/phpunit --coverage-clover clover
 
 after_success:
     - curl -sL https://bit.ly/artifact-uploader | php

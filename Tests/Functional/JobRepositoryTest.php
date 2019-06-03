@@ -2,14 +2,11 @@
 
 namespace JMS\JobQueueBundle\Tests\Functional;
 
+use Doctrine\ORM\EntityManager;
+use JMS\JobQueueBundle\Entity\Job;
+use JMS\JobQueueBundle\Entity\Repository\JobRepository;
 use JMS\JobQueueBundle\Tests\Functional\TestBundle\Entity\Train;
 use JMS\JobQueueBundle\Tests\Functional\TestBundle\Entity\Wagon;
-use PHPUnit\Framework\Constraint\LogicalNot;
-use Symfony\Component\EventDispatcher\EventDispatcher;
-use Doctrine\ORM\EntityManager;
-use JMS\JobQueueBundle\Entity\Repository\JobRepository;
-use JMS\JobQueueBundle\Event\StateChangeEvent;
-use JMS\JobQueueBundle\Entity\Job;
 
 class JobRepositoryTest extends BaseTestCase
 {
